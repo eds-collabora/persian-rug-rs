@@ -1,0 +1,6 @@
+[workspace]
+members = [
+   "persian-rug",
+   "persian-rug_derive",
+   "test_suite"
+]

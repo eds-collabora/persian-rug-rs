@@ -1,0 +1,22 @@
+[package]
+name = "persian-rug_derive"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Framework for bringing together disparate objects with inconvenient relationships."
+repository = "https://github.com/eds-collabora/persian-rug-rs"
+keywords = [ "framework", "utility", "library", "storage", "reference" ]
+categories = [ "data-structures", "memory-management", "rust-patterns" ]
+readme = "../README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version="1.0", features=["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+convert_case = "0.5"
+
+[dev-dependencies]
+persian-rug = { path = "../persian-rug" }
