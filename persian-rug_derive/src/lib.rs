@@ -382,6 +382,15 @@ pub fn contextual(args: TokenStream, input: TokenStream) -> TokenStream {
         ident, generics, ..
     } = syn::parse_macro_input!(input);
 
+    if args.is_empty() {
+        return syn::Error::new(
+            pm2::Span::call_site(),
+            "You must specify the associated context when using contextual.",
+        )
+        .to_compile_error()
+        .into();
+    }
+
     let context: syn::Type = syn::parse_macro_input!(args);
 
     let (generics, ty_generics, wc) = generics.split_for_impl();
