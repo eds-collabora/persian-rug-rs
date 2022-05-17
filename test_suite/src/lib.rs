@@ -234,14 +234,23 @@ mod context_tests {
 mod table_tests {
     use super::*;
     use persian_rug::Table;
-    
+
     #[test]
     fn test_table() {
         let mut t = Table::<Foo<State2>>::new();
 
-        let f1 = t.push(Foo { _marker: Default::default(), a: 0 });
-        let f2 = t.push(Foo { _marker: Default::default(), a: 1 });
-        let f3 = t.push(Foo { _marker: Default::default(), a: 2 });
+        let f1 = t.push(Foo {
+            _marker: Default::default(),
+            a: 0,
+        });
+        let f2 = t.push(Foo {
+            _marker: Default::default(),
+            a: 1,
+        });
+        let f3 = t.push(Foo {
+            _marker: Default::default(),
+            a: 2,
+        });
 
         assert_eq!(
             std::any::TypeId::of::<persian_rug::Proxy<Foo<State2>>>(),
@@ -282,7 +291,9 @@ mod table_tests {
         assert_eq!(t.get(&f2).map(|f| f.a), Some(7));
         assert_eq!(t.get(&f3).map(|f| f.a), Some(8));
 
-        let foos = t.iter_proxies().collect::<Vec<&persian_rug::Proxy<Foo<State2>>>>();
+        let foos = t
+            .iter_proxies()
+            .collect::<Vec<&persian_rug::Proxy<Foo<State2>>>>();
         assert_eq!(foos[0], &f1);
         assert_eq!(foos[1], &f2);
         assert_eq!(foos[2], &f3);
@@ -293,20 +304,20 @@ mod proxy_tests {
     use super::*;
     use persian_rug::Context;
     use std::cmp::{Ord, Ordering};
-    
+
     #[test]
     fn test_ord() {
         let mut s = State2(
             persian_rug::Table::new(),
             persian_rug::Table::new(),
             persian_rug::Table::new(),
-            persian_rug::Table::new()
+            persian_rug::Table::new(),
         );
 
-        let f1 = s.add( Foo2 { a: 0 } );
-        let f2 = s.add( Foo2 { a: 0 } );
-        let f3 = s.add( Foo2 { a: 0 } );
-        let f4 = s.add( Foo2 { a: 0 } );
+        let f1 = s.add(Foo2 { a: 0 });
+        let f2 = s.add(Foo2 { a: 0 });
+        let f3 = s.add(Foo2 { a: 0 });
+        let f4 = s.add(Foo2 { a: 0 });
 
         assert_eq!(f1.cmp(&f1), Ordering::Equal);
         assert_eq!(f1.cmp(&f2), Ordering::Less);
@@ -332,13 +343,13 @@ mod proxy_tests {
             persian_rug::Table::new(),
             persian_rug::Table::new(),
             persian_rug::Table::new(),
-            persian_rug::Table::new()
+            persian_rug::Table::new(),
         );
 
-        let f1 = s.add( Foo2 { a: 0 } );
-        let f2 = s.add( Foo2 { a: 0 } );
-        let f3 = s.add( Foo2 { a: 0 } );
-        let f4 = s.add( Foo2 { a: 0 } );
+        let f1 = s.add(Foo2 { a: 0 });
+        let f2 = s.add(Foo2 { a: 0 });
+        let f3 = s.add(Foo2 { a: 0 });
+        let f4 = s.add(Foo2 { a: 0 });
 
         assert_eq!(f1.partial_cmp(&f1), Some(Ordering::Equal));
         assert_eq!(f1.partial_cmp(&f2), Some(Ordering::Less));
@@ -364,13 +375,13 @@ mod proxy_tests {
             persian_rug::Table::new(),
             persian_rug::Table::new(),
             persian_rug::Table::new(),
-            persian_rug::Table::new()
+            persian_rug::Table::new(),
         );
 
-        let f1 = s.add( Foo2 { a: 0 } );
-        let f2 = s.add( Foo2 { a: 0 } );
-        let f3 = s.add( Foo2 { a: 0 } );
-        let f4 = s.add( Foo2 { a: 0 } );
+        let f1 = s.add(Foo2 { a: 0 });
+        let f2 = s.add(Foo2 { a: 0 });
+        let f3 = s.add(Foo2 { a: 0 });
+        let f4 = s.add(Foo2 { a: 0 });
 
         assert_eq!(f1.eq(&f1), true);
         assert_eq!(f1.eq(&f2), false);
@@ -396,25 +407,168 @@ mod proxy_tests {
             persian_rug::Table::new(),
             persian_rug::Table::new(),
             persian_rug::Table::new(),
-            persian_rug::Table::new()
+            persian_rug::Table::new(),
         );
 
-        let f1 = s.add( Foo2 { a: 0 } );
-        let f2 = s.add( Foo2 { a: 0 } );
-        let f3 = s.add( Foo2 { a: 0 } );
-        let f4 = s.add( Foo2 { a: 0 } );
+        let f1 = s.add(Foo2 { a: 0 });
+        let f2 = s.add(Foo2 { a: 0 });
+        let f3 = s.add(Foo2 { a: 0 });
+        let f4 = s.add(Foo2 { a: 0 });
 
         assert_eq!(
             &format!("{:?}", f1),
-            "persian_rug::Proxy<test_suite::Foo2> { handle: 0 }");
+            "persian_rug::Proxy<test_suite::Foo2> { handle: 0 }"
+        );
         assert_eq!(
             &format!("{:?}", f2),
-            "persian_rug::Proxy<test_suite::Foo2> { handle: 1 }");
+            "persian_rug::Proxy<test_suite::Foo2> { handle: 1 }"
+        );
         assert_eq!(
             &format!("{:?}", f3),
-            "persian_rug::Proxy<test_suite::Foo2> { handle: 2 }");
+            "persian_rug::Proxy<test_suite::Foo2> { handle: 2 }"
+        );
         assert_eq!(
             &format!("{:?}", f4),
-            "persian_rug::Proxy<test_suite::Foo2> { handle: 3 }");
+            "persian_rug::Proxy<test_suite::Foo2> { handle: 3 }"
+        );
+    }
+}
+
+mod constraints_tests {
+    use super::*;
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> Foo<C> {
+        fn read_a(&self) -> i32 {
+            self.a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>))]
+    impl<C> Foo<C> {
+        fn read_proxy_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Foo<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&p).a
+        }
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> Bar<C> {
+        fn read_a(&self) -> i32 {
+            self.a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>))]
+    impl<C> Bar<C> {
+        fn read_foo_a<A: persian_rug::Accessor<Context = C>>(&self, access: A) -> i32 {
+            access.get(&self.foo).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>))]
+    impl<C> Bar<C> {
+        fn read_proxy_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Bar<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&p).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>))]
+    impl<C: persian_rug::Context> Bar<C> {
+        fn read_proxy_foo_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Bar<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&access.get(&p).foo).a
+        }
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> Baz<C> {
+        fn read_a(&self) -> i32 {
+            self.a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>))]
+    impl<C> Baz<C> {
+        fn read_bar_a<A: persian_rug::Accessor<Context = C>>(&self, access: A) -> i32 {
+            access.get(&self.bar).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>))]
+    impl<C> Baz<C> {
+        fn read_bar_foo_a<A: persian_rug::Accessor<Context = C>>(&self, access: A) -> i32 {
+            access.get(&access.get(&self.bar).foo).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Baz<C>))]
+    impl<C: persian_rug::Context> Baz<C> {
+        fn read_proxy_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Baz<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&p).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>, Baz<C>))]
+    impl<C: persian_rug::Context> Baz<C> {
+        fn read_proxy_bar_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Baz<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&access.get(&p).bar).a
+        }
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>, Baz<C>))]
+    impl<C: persian_rug::Context> Baz<C> {
+        fn read_proxy_bar_foo_a<A: persian_rug::Accessor<Context = C>>(
+            p: &persian_rug::Proxy<Baz<C>>,
+            access: A,
+        ) -> i32 {
+            access.get(&access.get(&access.get(&p).bar).foo).a
+        }
+    }
+
+    #[test]
+    fn test_impls() {
+        use persian_rug::Context;
+
+        let mut s = State {
+            foo: persian_rug::Table::new(),
+            bar: persian_rug::Table::new(),
+            baz: persian_rug::Table::new(),
+        };
+
+        let f1 = s.add(Foo {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let b1 = s.add(Bar { a: 2, foo: f1 });
+        let z1 = s.add(Baz { a: 3, bar: b1 });
+
+        assert_eq!(s.get(&f1).read_a(), 1);
+        assert_eq!(Foo::read_proxy_a(&f1, &s), 1);
+
+        assert_eq!(s.get(&b1).read_a(), 2);
+        assert_eq!(s.get(&b1).read_foo_a(&s), 1);
+        assert_eq!(Bar::read_proxy_a(&b1, &s), 2);
+        assert_eq!(Bar::read_proxy_foo_a(&b1, &s), 1);
+
+        assert_eq!(s.get(&z1).read_a(), 3);
+        assert_eq!(s.get(&z1).read_bar_a(&s), 2);
+        assert_eq!(s.get(&z1).read_bar_foo_a(&s), 1);
+        assert_eq!(Baz::read_proxy_a(&z1, &s), 3);
+        assert_eq!(Baz::read_proxy_bar_a(&z1, &s), 2);
+        assert_eq!(Baz::read_proxy_bar_foo_a(&z1, &s), 1);
     }
 }
