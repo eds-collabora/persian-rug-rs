@@ -113,14 +113,33 @@ impl syn::parse::Parse for ConstraintArgs {
 /// ```
 #[proc_macro_attribute]
 pub fn constraints(args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut target: syn::ItemImpl = syn::parse_macro_input!(input);
+    let mut target: syn::Item = syn::parse_macro_input!(input);
+
+    let generics = match &mut target {
+        syn::Item::Enum(e) => &mut e.generics,
+        syn::Item::Fn(f) => &mut f.sig.generics,
+        syn::Item::Impl(i) => &mut i.generics,
+        syn::Item::Struct(s) => &mut s.generics,
+        syn::Item::Trait(t) => &mut t.generics,
+        syn::Item::TraitAlias(t) => &mut t.generics,
+        syn::Item::Type(t) => &mut t.generics,
+        syn::Item::Union(u) => &mut u.generics,
+        _ => {
+            return syn::Error::new(
+                pm2::Span::call_site(),
+                "This attribute extends a where clause, or generic constraints. It cannot be used here."
+            )
+                .to_compile_error()
+                .into();
+        }
+    };
 
     let ConstraintArgs {
         context,
         used_types,
     } = syn::parse_macro_input!(args);
 
-    let wc = target.generics.make_where_clause();
+    let wc = generics.make_where_clause();
 
     let mut getters = syn::punctuated::Punctuated::<syn::TypeParamBound, syn::token::Add>::new();
     getters.push(syn::parse_quote! { ::persian_rug::Context });
@@ -281,7 +300,7 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
     } else {
         return syn::Error::new(
             pm2::Span::call_site(),
-            "Only structs can be annotated as states.",
+            "Only structs can be annotated as persian-rugs.",
         )
         .to_compile_error()
         .into();

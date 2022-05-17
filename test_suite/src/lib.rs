@@ -434,7 +434,7 @@ mod proxy_tests {
     }
 }
 
-mod constraints_tests {
+mod impl_constraints_tests {
     use super::*;
 
     #[persian_rug::constraints(context = C)]
@@ -570,5 +570,437 @@ mod constraints_tests {
         assert_eq!(Baz::read_proxy_a(&z1, &s), 3);
         assert_eq!(Baz::read_proxy_bar_a(&z1, &s), 2);
         assert_eq!(Baz::read_proxy_bar_foo_a(&z1, &s), 1);
+    }
+}
+
+mod fn_constraints_tests {
+    use super::*;
+
+    #[persian_rug::constraints(context = C)]
+    fn foo_read_a<C>(foo: &Foo<C>) -> i32 {
+        foo.a
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>))]
+    fn foo_read_proxy_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Foo<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&p).a
+    }
+
+    #[persian_rug::constraints(context = C)]
+    fn bar_read_a<C>(bar: &Bar<C>) -> i32 {
+        bar.a
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>))]
+    fn bar_read_foo_a<C, A: persian_rug::Accessor<Context = C>>(bar: &Bar<C>, access: A) -> i32 {
+        access.get(&bar.foo).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>))]
+    fn bar_read_proxy_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Bar<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&p).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>))]
+    fn bar_read_proxy_foo_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Bar<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&access.get(&p).foo).a
+    }
+
+    #[persian_rug::constraints(context = C)]
+    fn baz_read_a<C>(baz: &Baz<C>) -> i32 {
+        baz.a
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>))]
+    fn baz_read_bar_a<C, A: persian_rug::Accessor<Context = C>>(baz: &Baz<C>, access: A) -> i32 {
+        access.get(&baz.bar).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>))]
+    fn baz_read_bar_foo_a<C, A: persian_rug::Accessor<Context = C>>(
+        baz: &Baz<C>,
+        access: A,
+    ) -> i32 {
+        access.get(&access.get(&baz.bar).foo).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Baz<C>))]
+    fn baz_read_proxy_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Baz<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&p).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Bar<C>, Baz<C>))]
+    fn baz_read_proxy_bar_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Baz<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&access.get(&p).bar).a
+    }
+
+    #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>, Baz<C>))]
+    fn baz_read_proxy_bar_foo_a<C, A: persian_rug::Accessor<Context = C>>(
+        p: &persian_rug::Proxy<Baz<C>>,
+        access: A,
+    ) -> i32 {
+        access.get(&access.get(&access.get(&p).bar).foo).a
+    }
+
+    #[test]
+    fn test_fns() {
+        use persian_rug::Context;
+
+        let mut s = State {
+            foo: persian_rug::Table::new(),
+            bar: persian_rug::Table::new(),
+            baz: persian_rug::Table::new(),
+        };
+
+        let f1 = s.add(Foo {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let b1 = s.add(Bar { a: 2, foo: f1 });
+        let z1 = s.add(Baz { a: 3, bar: b1 });
+
+        assert_eq!(foo_read_a(s.get(&f1)), 1);
+        assert_eq!(foo_read_proxy_a(&f1, &s), 1);
+
+        assert_eq!(bar_read_a(s.get(&b1)), 2);
+        assert_eq!(bar_read_foo_a(s.get(&b1), &s), 1);
+        assert_eq!(bar_read_proxy_a(&b1, &s), 2);
+        assert_eq!(bar_read_proxy_foo_a(&b1, &s), 1);
+
+        assert_eq!(baz_read_a(s.get(&z1)), 3);
+        assert_eq!(baz_read_bar_a(s.get(&z1), &s), 2);
+        assert_eq!(baz_read_bar_foo_a(s.get(&z1), &s), 1);
+        assert_eq!(baz_read_proxy_a(&z1, &s), 3);
+        assert_eq!(baz_read_proxy_bar_a(&z1, &s), 2);
+        assert_eq!(baz_read_proxy_bar_foo_a(&z1, &s), 1);
+    }
+}
+
+mod struct_constraints_tests {
+    #[persian_rug::constraints(context = C)]
+    #[persian_rug::contextual(C)]
+    struct Foo3<C> {
+        _marker: core::marker::PhantomData<C>,
+        a: i32,
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo3<C>))]
+    #[persian_rug::contextual(C)]
+    struct Bar3<C> {
+        a: i32,
+        foo: persian_rug::Proxy<Foo3<C>>,
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo3<C>, Bar3<C>))]
+    #[persian_rug::contextual(C)]
+    struct Baz3<C> {
+        a: i32,
+        bar: persian_rug::Proxy<Bar3<C>>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State3a {
+        #[table]
+        foo: Foo3<State3a>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State3b {
+        #[table]
+        foo: Foo3<State3b>,
+        #[table]
+        bar: Bar3<State3b>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State3c {
+        #[table]
+        foo: Foo3<State3c>,
+        #[table]
+        bar: Bar3<State3c>,
+        #[table]
+        baz: Baz3<State3c>,
+    }
+
+    #[test]
+    fn test_structs() {
+        use persian_rug::Context;
+
+        let mut s3a = State3a {
+            foo: Default::default(),
+        };
+
+        let _f1 = s3a.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+
+        let mut s3b = State3b {
+            foo: Default::default(),
+            bar: Default::default(),
+        };
+
+        let f1 = s3b.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let _b1 = s3b.add(Bar3 { a: 2, foo: f1 });
+
+        let mut s3c = State3c {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        };
+
+        let f1 = s3c.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let b1 = s3c.add(Bar3 { a: 2, foo: f1 });
+        let _z1 = s3c.add(Baz3 { a: 3, bar: b1 });
+    }
+}
+
+mod enum_constraints_tests {
+    #[persian_rug::constraints(context = C)]
+    #[persian_rug::contextual(C)]
+    enum Foo4<C> {
+        Base {
+            _marker: core::marker::PhantomData<C>,
+            a: i32,
+        },
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo4<C>))]
+    #[persian_rug::contextual(C)]
+    enum Bar4<C> {
+        Base {
+            a: i32,
+            foo: persian_rug::Proxy<Foo4<C>>,
+        },
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo4<C>, Bar4<C>))]
+    #[persian_rug::contextual(C)]
+    enum Baz4<C> {
+        Base {
+            a: i32,
+            bar: persian_rug::Proxy<Bar4<C>>,
+        },
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State4a {
+        #[table]
+        foo: Foo4<State4a>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State4b {
+        #[table]
+        foo: Foo4<State4b>,
+        #[table]
+        bar: Bar4<State4b>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State4c {
+        #[table]
+        foo: Foo4<State4c>,
+        #[table]
+        bar: Bar4<State4c>,
+        #[table]
+        baz: Baz4<State4c>,
+    }
+
+    #[test]
+    fn test_enums() {
+        use persian_rug::Context;
+
+        let mut s4a = State4a {
+            foo: Default::default(),
+        };
+
+        let _f1 = s4a.add(Foo4::Base {
+            a: 1,
+            _marker: Default::default(),
+        });
+
+        let mut s4b = State4b {
+            foo: Default::default(),
+            bar: Default::default(),
+        };
+
+        let f1 = s4b.add(Foo4::Base {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let _b1 = s4b.add(Bar4::Base { a: 2, foo: f1 });
+
+        let mut s4c = State4c {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        };
+
+        let f1 = s4c.add(Foo4::Base {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let b1 = s4c.add(Bar4::Base { a: 2, foo: f1 });
+        let _z1 = s4c.add(Baz4::Base { a: 3, bar: b1 });
+    }
+}
+
+mod trait_constraints_tests {
+    #[persian_rug::constraints(context = C)]
+    trait Foo5<C> {
+        fn read_a(&self) -> i32;
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> persian_rug::Contextual for Box<dyn Foo5<C>> {
+        type Context = C;
+    }
+
+    #[persian_rug::constraints(context = C)]
+    #[persian_rug::contextual(C)]
+    struct F5<C> {
+        _marker: core::marker::PhantomData<C>,
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> Foo5<C> for F5<C> {
+        fn read_a(&self) -> i32 {
+            1
+        }
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>))]
+    trait Bar5<C> {
+        fn read_a(&self) -> i32;
+        fn read_foo(&self) -> persian_rug::Proxy<Box<dyn Foo5<C>>>;
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> persian_rug::Contextual for Box<dyn Bar5<C>> {
+        type Context = C;
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>))]
+    #[persian_rug::contextual(C)]
+    struct B5<C> {
+        foo: persian_rug::Proxy<Box<dyn Foo5<C>>>,
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>))]
+    impl<C> Bar5<C> for B5<C> {
+        fn read_a(&self) -> i32 {
+            2
+        }
+        fn read_foo(&self) -> persian_rug::Proxy<Box<dyn Foo5<C>>> {
+            self.foo
+        }
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>, Box<dyn Bar5<C>>))]
+    trait Baz5<C> {
+        fn read_a(&self) -> i32;
+        fn read_bar(&self) -> persian_rug::Proxy<Box<dyn Bar5<C>>>;
+    }
+
+    #[persian_rug::constraints(context = C)]
+    impl<C> persian_rug::Contextual for Box<dyn Baz5<C>> {
+        type Context = C;
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>, Box<dyn Bar5<C>>))]
+    #[persian_rug::contextual(C)]
+    struct Z5<C> {
+        bar: persian_rug::Proxy<Box<dyn Bar5<C>>>,
+    }
+
+    #[persian_rug::constraints(context = C, access(Box<dyn Foo5<C>>, Box<dyn Bar5<C>>))]
+    impl<C> Baz5<C> for Z5<C> {
+        fn read_a(&self) -> i32 {
+            3
+        }
+        fn read_bar(&self) -> persian_rug::Proxy<Box<dyn Bar5<C>>> {
+            self.bar
+        }
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State5a {
+        #[table]
+        foo: Box<dyn Foo5<State5a>>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State5b {
+        #[table]
+        foo: Box<dyn Foo5<State5b>>,
+        #[table]
+        bar: Box<dyn Bar5<State5b>>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State5c {
+        #[table]
+        foo: Box<dyn Foo5<State5c>>,
+        #[table]
+        bar: Box<dyn Bar5<State5c>>,
+        #[table]
+        baz: Box<dyn Baz5<State5c>>,
+    }
+
+    #[test]
+    fn test_traits() {
+        use persian_rug::Context;
+
+        let mut s5a = State5a {
+            foo: Default::default(),
+        };
+
+        let _f1 = s5a.add(Box::new(F5 {
+            _marker: Default::default(),
+        }));
+
+        let mut s5b = State5b {
+            foo: Default::default(),
+            bar: Default::default(),
+        };
+
+        let f1 = s5b.add::<Box<dyn Foo5<State5b>>>(Box::new(F5 {
+            _marker: Default::default(),
+        }));
+        let _b1 = s5b.add::<Box<dyn Bar5<State5b>>>(Box::new(B5 { foo: f1 }));
+
+        let mut s5c = State5c {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        };
+
+        let f1 = s5c.add::<Box<dyn Foo5<State5c>>>(Box::new(F5 {
+            _marker: Default::default(),
+        }));
+        let b1 = s5c.add::<Box<dyn Bar5<State5c>>>(Box::new(B5 { foo: f1 }));
+        let _z1 = s5c.add::<Box<dyn Baz5<State5c>>>(Box::new(Z5 { bar: b1 }));
     }
 }
