@@ -6,7 +6,7 @@ participating in the graph. It does not require that links form
 a directed acyclic graph, or tree, or anything convenient.
 
 To do this, all objects are stored in a centralised holder (a
-[Context](https://docs.rs/persian-rug/latest/persian_rug/struct.Context.html),
+[Context](https://docs.rs/persian-rug/latest/persian_rug/struct.Context.html)),
 which passes out
 [Proxy](https://docs.rs/persian-rug/latest/persian_rug/struct.Proxy.html)
 objects to serve as pointers. All access requires the context to be
