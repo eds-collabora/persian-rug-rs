@@ -8,3 +8,4 @@ license = "Apache-2.0 OR MIT"
 
 [dependencies]
 persian-rug = { path = "../persian-rug", features=["clone-replace"] }
+clone-replace = "0.1"

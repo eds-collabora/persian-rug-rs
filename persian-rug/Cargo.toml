@@ -15,4 +15,4 @@ clone-replace = [ "dep:clone-replace" ]
 
 [dependencies]
 persian-rug_derive = { version = "0.1.1", path = "../persian-rug_derive" }
-clone-replace = { version = "0.1.1", optional=true }
+clone-replace = { version = "0.1", optional=true }

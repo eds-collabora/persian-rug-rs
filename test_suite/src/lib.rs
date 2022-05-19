@@ -3,24 +3,28 @@
 
 use std::any::Any;
 
+#[derive(Clone)]
 #[persian_rug::contextual(C)]
 struct Foo<C: persian_rug::Context> {
     _marker: core::marker::PhantomData<C>,
     a: i32,
 }
 
+#[derive(Clone)]
 #[persian_rug::contextual(C)]
 struct Bar<C: persian_rug::Context> {
     a: i32,
     foo: persian_rug::Proxy<Foo<C>>,
 }
 
+#[derive(Clone)]
 #[persian_rug::contextual(C)]
 struct Baz<C: persian_rug::Context> {
     a: i32,
     bar: persian_rug::Proxy<Bar<C>>,
 }
 
+#[derive(Clone)]
 #[persian_rug::persian_rug]
 pub struct State {
     #[table]
@@ -1002,5 +1006,136 @@ mod trait_constraints_tests {
         }));
         let b1 = s5c.add::<Box<dyn Bar5<State5c>>>(Box::new(B5 { foo: f1 }));
         let _z1 = s5c.add::<Box<dyn Baz5<State5c>>>(Box::new(Z5 { bar: b1 }));
+    }
+}
+
+mod mutator_tests {
+    use super::*;
+
+    use clone_replace::CloneReplace;
+    use persian_rug::{Mutator, Proxy};
+    use std::sync::{Mutex, RwLock};
+
+    fn run_mutation_test<'b, B>(mut mutator: B) -> B
+    where
+        B: 'b + Mutator<Context = State>,
+    {
+        // add
+        let f1 = mutator.add(Foo {
+            _marker: Default::default(),
+            a: 0,
+        });
+        let b1 = mutator.add(Bar { a: 1, foo: f1 });
+        let z1 = mutator.add(Baz { a: 2, bar: b1 });
+
+        // get
+        assert_eq!(mutator.get(&f1).a, 0);
+        assert_eq!(mutator.get(&b1).a, 1);
+        assert_eq!(mutator.get(&b1).foo, f1);
+        assert_eq!(mutator.get(&z1).a, 2);
+        assert_eq!(mutator.get(&z1).bar, b1);
+
+        // get_mut
+        mutator.get_mut(&f1).a = 2;
+        mutator.get_mut(&b1).a = 3;
+        mutator.get_mut(&z1).a = 4;
+        assert_eq!(mutator.get(&f1).a, 2);
+        assert_eq!(mutator.get(&b1).a, 3);
+        assert_eq!(mutator.get(&b1).foo, f1);
+        assert_eq!(mutator.get(&z1).a, 4);
+        assert_eq!(mutator.get(&z1).bar, b1);
+
+        // get_iter
+        let foos = mutator.get_iter().collect::<Vec<&Foo<State>>>();
+        assert_eq!(foos.len(), 1);
+        assert_eq!(foos[0] as *const _, mutator.get(&f1) as *const _);
+        let bars = mutator.get_iter().collect::<Vec<&Bar<State>>>();
+        assert_eq!(bars.len(), 1);
+        assert_eq!(bars[0] as *const _, mutator.get(&b1) as *const _);
+        let bazs = mutator.get_iter().collect::<Vec<&Baz<State>>>();
+        assert_eq!(bazs.len(), 1);
+        assert_eq!(bazs[0] as *const _, mutator.get(&z1) as *const _);
+
+        // get_iter_mut
+        for foo in mutator.get_iter_mut::<Foo<State>>() {
+            foo.a = 5;
+        }
+        for bar in mutator.get_iter_mut::<Bar<State>>() {
+            bar.a = 6;
+        }
+        for baz in mutator.get_iter_mut::<Baz<State>>() {
+            baz.a = 7;
+        }
+        assert_eq!(mutator.get(&f1).a, 5);
+        assert_eq!(mutator.get(&b1).a, 6);
+        assert_eq!(mutator.get(&b1).foo, f1);
+        assert_eq!(mutator.get(&z1).a, 7);
+        assert_eq!(mutator.get(&z1).bar, b1);
+
+        // get_proxy_iter
+        let foos = mutator
+            .get_proxy_iter()
+            .copied()
+            .collect::<Vec<Proxy<Foo<State>>>>();
+        assert_eq!(foos.len(), 1);
+        assert_eq!(foos[0], f1);
+        let bars = mutator
+            .get_proxy_iter()
+            .copied()
+            .collect::<Vec<Proxy<Bar<State>>>>();
+        assert_eq!(bars.len(), 1);
+        assert_eq!(bars[0], b1);
+        let bazs = mutator
+            .get_proxy_iter()
+            .copied()
+            .collect::<Vec<Proxy<Baz<State>>>>();
+        assert_eq!(bazs.len(), 1);
+        assert_eq!(bazs[0], z1);
+
+        mutator
+    }
+
+    #[test]
+    fn test_mut_ref() {
+        let mut s = State {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        };
+
+        run_mutation_test(&mut s);
+    }
+
+    #[test]
+    fn test_mutex_guard() {
+        let s = Mutex::new(State {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        });
+
+        let _ = run_mutation_test(s.lock().unwrap());
+    }
+
+    #[test]
+    fn test_rw_lock_write_guard() {
+        let s = RwLock::new(State {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        });
+
+        let _ = run_mutation_test(s.write().unwrap());
+    }
+
+    #[test]
+    fn test_mutate_guard() {
+        let s = CloneReplace::new(State {
+            foo: Default::default(),
+            bar: Default::default(),
+            baz: Default::default(),
+        });
+
+        let _ = run_mutation_test(s.mutate());
     }
 }
