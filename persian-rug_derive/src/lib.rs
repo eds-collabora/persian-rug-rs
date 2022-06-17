@@ -190,11 +190,11 @@ pub fn constraints(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
     let syn::DeriveInput {
+        attrs,
         vis,
         ident: ty_ident,
         data,
-        generics,
-        ..
+        generics
     } = syn::parse_macro_input!(input);
 
     let (generics, ty_generics, wc) = generics.split_for_impl();
@@ -306,7 +306,16 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
         .into();
     };
 
+    let attrs = {
+        let mut res = pm2::TokenStream::new();
+        for attr in attrs {
+            attr.to_tokens(&mut res);
+        }
+        res
+    };
+
     let res = quote::quote! {
+        #attrs
         #body
 
         impl #generics ::persian_rug::Context for #ty_ident #ty_generics #wc {
