@@ -785,6 +785,72 @@ mod struct_constraints_tests {
     }
 }
 
+mod tuple_constraints_tests {
+    #[persian_rug::constraints(context = C)]
+    #[persian_rug::contextual(C)]
+    struct Foo3<C> {
+        _marker: core::marker::PhantomData<C>,
+        a: i32,
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo3<C>))]
+    #[persian_rug::contextual(C)]
+    struct Bar3<C> {
+        a: i32,
+        foo: persian_rug::Proxy<Foo3<C>>,
+    }
+
+    #[persian_rug::constraints(context = C, access(Foo3<C>, Bar3<C>))]
+    #[persian_rug::contextual(C)]
+    struct Baz3<'a, C> {
+        a: &'a i32,
+        bar: persian_rug::Proxy<Bar3<C>>,
+    }
+
+    #[persian_rug::persian_rug]
+    pub struct State3a(#[table] Foo3<State3a>);
+
+    #[persian_rug::persian_rug]
+    pub struct State3b(#[table] Foo3<State3b>, #[table] Bar3<State3b>);
+
+    #[persian_rug::persian_rug]
+    pub struct State3c<'a>(
+        #[table] Foo3<State3c<'a>>,
+        #[table] Bar3<State3c<'a>>,
+        #[table] Baz3<'a, State3c<'a>>,
+    );
+
+    #[test]
+    fn test_tuples() {
+        use persian_rug::Context;
+
+        let mut s3a = State3a(Default::default());
+
+        let _f1 = s3a.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+
+        let mut s3b = State3b(Default::default(), Default::default());
+
+        let f1 = s3b.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let _b1 = s3b.add(Bar3 { a: 2, foo: f1 });
+
+        let mut s3c = State3c(Default::default(), Default::default(), Default::default());
+
+        let f1 = s3c.add(Foo3 {
+            a: 1,
+            _marker: Default::default(),
+        });
+        let a: i32 = 3;
+        let b1 = s3c.add(Bar3 { a: 2, foo: f1 });
+        let _z1 = s3c.add(Baz3 { a: &a, bar: b1 });
+    }
+}
+
 mod enum_constraints_tests {
     #[persian_rug::constraints(context = C)]
     #[persian_rug::contextual(C)]
