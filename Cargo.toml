@@ -4,3 +4,4 @@ members = [
    "persian-rug_derive",
    "test_suite"
 ]
+resolver="2"

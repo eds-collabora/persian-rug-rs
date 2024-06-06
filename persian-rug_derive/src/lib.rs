@@ -194,7 +194,7 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
         vis,
         ident: ty_ident,
         data,
-        generics
+        generics,
     } = syn::parse_macro_input!(input);
 
     let (generics, ty_generics, wc) = generics.split_for_impl();
@@ -224,8 +224,8 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
             let attrs = field
                 .attrs
                 .iter()
-                .cloned()
                 .filter(|a| !a.path.is_ident("table"))
+                .cloned()
                 .collect::<Vec<_>>();
 
             if !is_table {
@@ -246,7 +246,7 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
                 });
 
                 impls.extend(quote::quote! {
-                    impl ::persian_rug::Owner<#field_type> for #ty_ident #ty_generics #wc {
+                    impl #generics ::persian_rug::Owner<#field_type> for #ty_ident #ty_generics #wc {
                         fn add(&mut self, what: #field_type) -> ::persian_rug::Proxy<#field_type> {
                             self.#ident.push(what)
                         }
@@ -286,9 +286,9 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
                     (process_field)(field);
                 }
                 quote::quote! {
-                    #vis struct #ty_ident #generics #wc(
+                    #vis struct #ty_ident #generics(
                         #fields
-                    );
+                    ) #wc;
                 }
             }
             syn::Fields::Unit => {

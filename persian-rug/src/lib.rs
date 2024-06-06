@@ -138,6 +138,7 @@
 
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::collections::BTreeMap;
+use std::hash::{Hash, Hasher};
 
 /// A holder for [`Contextual`] types.
 ///
@@ -765,10 +766,7 @@ pub struct Proxy<T> {
 
 impl<T> Clone for Proxy<T> {
     fn clone(&self) -> Self {
-        Proxy {
-            _marker: Default::default(),
-            index: self.index,
-        }
+        *self
     }
 }
 
@@ -776,7 +774,7 @@ impl<T> Copy for Proxy<T> {}
 
 impl<T> PartialOrd for Proxy<T> {
     fn partial_cmp(&self, other: &Proxy<T>) -> Option<Ordering> {
-        self.index.partial_cmp(&other.index)
+        Some(self.cmp(other))
     }
 }
 
@@ -794,6 +792,12 @@ impl<T> PartialEq for Proxy<T> {
 
 impl<T> Eq for Proxy<T> {}
 
+impl<T> Hash for Proxy<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.index.hash(state);
+    }
+}
+
 impl<T> std::fmt::Debug for Proxy<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -802,6 +806,196 @@ impl<T> std::fmt::Debug for Proxy<T> {
             std::any::type_name::<T>(),
             self.index
         )
+    }
+}
+
+/// A dense set of [`Proxy`] objects
+///
+/// This is a dense bit-set of [`Proxy`] objects, where each existing
+/// object is represented by a single bit. Whether this representation
+/// makes sense in a given application depends upon how many objects
+/// of type `T` you have created proxies for, and what proportion will
+/// typically belong to the set. In many cases, other set
+/// representations like [`BTreeSet`](std::collections::BTreeSet) and
+/// [`HashSet`](std::collections::HashSet) will be preferable.
+///
+/// The driver for this type is graph search, where it may be that this
+/// representation is smaller, lighter and faster than those set types,
+/// and we have a need to both query efficiently and to store very large
+/// numbers of sets.
+///
+/// Usage is straightforward:
+///
+/// ```rust
+/// use persian_rug::{contextual, persian_rug, Context, ProxySet};
+///
+/// #[contextual(Foo)]
+/// struct Bar {
+///   name: String,
+/// }
+///
+/// #[persian_rug]
+/// struct Foo(#[table] Bar);
+///
+/// let mut foo = Foo(Default::default());
+/// let a = foo.add(Bar { name: "A".to_string() });
+/// let b = foo.add(Bar { name: "B".to_string() });
+/// let c = foo.add(Bar { name: "C".to_string() });
+///
+/// let mut s = ProxySet::new();
+/// s.insert(a);
+/// s.insert(c);
+///
+/// assert!(s.contains(&a));
+/// assert!(!s.contains(&b));
+/// assert!(s.contains(&c));
+/// ```
+#[derive(Debug)]
+pub struct ProxySet<T> {
+    _marker: core::marker::PhantomData<T>,
+    marks: Vec<u64>,
+    len: usize,
+}
+
+impl<T> ProxySet<T> {
+    pub fn new() -> Self {
+        Self {
+            _marker: Default::default(),
+            marks: Vec::new(),
+            len: 0,
+        }
+    }
+
+    fn word(index: u64) -> usize {
+        (index >> 6) as usize
+    }
+    fn bit(index: u64) -> u64 {
+        1u64 << (index & 0x3F)
+    }
+
+    pub fn insert(&mut self, p: Proxy<T>) {
+        if self.marks.len() <= Self::word(p.index) {
+            self.marks.resize(Self::word(p.index) + 1, 0u64);
+        }
+        if self.marks[Self::word(p.index)] & Self::bit(p.index) == 0 {
+            self.marks[Self::word(p.index)] |= Self::bit(p.index);
+            self.len += 1;
+        }
+    }
+
+    pub fn contains(&self, p: &Proxy<T>) -> bool {
+        if self.marks.len() <= Self::word(p.index) {
+            false
+        } else {
+            self.marks[Self::word(p.index)] & (Self::bit(p.index)) != 0
+        }
+    }
+
+    pub fn remove(&mut self, p: &Proxy<T>) -> Option<Proxy<T>> {
+        if self.marks.len() <= Self::word(p.index) {
+            None
+        } else if self.marks[Self::word(p.index)] & (Self::bit(p.index)) != 0 {
+            self.marks[Self::word(p.index)] &= !(Self::bit(p.index));
+            self.len -= 1;
+            Some(*p)
+        } else {
+            None
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub fn iter(&self) -> ProxySetIterator<'_, T> {
+        ProxySetIterator {
+            _marker: Default::default(),
+            index: 0,
+            mask: 0,
+            owner: self,
+        }
+    }
+}
+
+impl<T> Default for ProxySet<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> Clone for ProxySet<T> {
+    fn clone(&self) -> Self {
+        Self {
+            _marker: Default::default(),
+            marks: self.marks.clone(),
+            len: self.len,
+        }
+    }
+}
+
+impl<T> PartialEq for ProxySet<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.marks == other.marks
+    }
+}
+
+impl<T> Eq for ProxySet<T> {}
+
+impl<T> PartialOrd for ProxySet<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<T> Ord for ProxySet<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.marks.cmp(&other.marks)
+    }
+}
+
+impl<T> Hash for ProxySet<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.marks.hash(state)
+    }
+}
+
+/// An [`Iterator`] over members of a [`ProxySet`].
+///
+/// This is returned by [`ProxySet::iter()`]. Note that the returned
+/// [`Proxy`] objects are not references, since there are no actual
+/// proxy objects stored in the [`ProxySet`].
+pub struct ProxySetIterator<'a, T> {
+    _marker: core::marker::PhantomData<T>,
+    index: u64,
+    mask: u64,
+    owner: &'a ProxySet<T>,
+}
+
+impl<'a, T> Iterator for ProxySetIterator<'a, T> {
+    type Item = Proxy<T>;
+
+    fn next(&mut self) -> Option<Proxy<T>> {
+        while self.owner.marks.len() > ProxySet::<T>::word(self.index) {
+            let w = self.owner.marks[ProxySet::<T>::word(self.index)];
+            if w ^ self.mask == 0 {
+                self.index = ((self.index >> 6) + 1) << 6;
+                self.mask = 0;
+            } else if w & ProxySet::<T>::bit(self.index) != 0 {
+                self.mask |= ProxySet::<T>::bit(self.index);
+                self.index += 1;
+                return Some(Proxy {
+                    _marker: Default::default(),
+                    index: self.index - 1,
+                });
+            } else {
+                self.index += 1;
+            }
+        }
+        None
     }
 }
 
