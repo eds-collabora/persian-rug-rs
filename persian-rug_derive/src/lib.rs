@@ -246,7 +246,7 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
                 });
 
                 impls.extend(quote::quote! {
-                    impl ::persian_rug::Owner<#field_type> for #ty_ident #ty_generics #wc {
+                    impl #generics ::persian_rug::Owner<#field_type> for #ty_ident #ty_generics #wc {
                         fn add(&mut self, what: #field_type) -> ::persian_rug::Proxy<#field_type> {
                             self.#ident.push(what)
                         }
