@@ -138,6 +138,7 @@
 
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::collections::BTreeMap;
+use std::hash::{Hash, Hasher};
 
 /// A holder for [`Contextual`] types.
 ///
@@ -790,6 +791,12 @@ impl<T> PartialEq for Proxy<T> {
 }
 
 impl<T> Eq for Proxy<T> {}
+
+impl<T> Hash for Proxy<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.index.hash(state);
+    }
+}
 
 impl<T> std::fmt::Debug for Proxy<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
