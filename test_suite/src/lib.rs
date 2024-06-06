@@ -273,10 +273,15 @@ mod table_tests {
         assert_eq!(t.get(&f2).map(|f| f.a), Some(1));
         assert_eq!(t.get(&f3).map(|f| f.a), Some(2));
 
-        t.get_mut(&f1).map(|f| f.a = 3);
-        t.get_mut(&f2).map(|f| f.a = 4);
-        t.get_mut(&f3).map(|f| f.a = 5);
-
+        if let Some(f) = t.get_mut(&f1) {
+            f.a = 3;
+        }
+        if let Some(f) = t.get_mut(&f2) {
+            f.a = 4;
+        }
+        if let Some(f) = t.get_mut(&f3) {
+            f.a = 5;
+        }
         assert_eq!(t.get(&f1).map(|f| f.a), Some(3));
         assert_eq!(t.get(&f2).map(|f| f.a), Some(4));
         assert_eq!(t.get(&f3).map(|f| f.a), Some(5));
@@ -387,22 +392,22 @@ mod proxy_tests {
         let f3 = s.add(Foo2 { a: 0 });
         let f4 = s.add(Foo2 { a: 0 });
 
-        assert_eq!(f1.eq(&f1), true);
-        assert_eq!(f1.eq(&f2), false);
-        assert_eq!(f1.eq(&f3), false);
-        assert_eq!(f1.eq(&f4), false);
-        assert_eq!(f2.eq(&f1), false);
-        assert_eq!(f2.eq(&f2), true);
-        assert_eq!(f2.eq(&f3), false);
-        assert_eq!(f2.eq(&f4), false);
-        assert_eq!(f3.eq(&f1), false);
-        assert_eq!(f3.eq(&f2), false);
-        assert_eq!(f3.eq(&f3), true);
-        assert_eq!(f3.eq(&f4), false);
-        assert_eq!(f4.eq(&f1), false);
-        assert_eq!(f4.eq(&f2), false);
-        assert_eq!(f4.eq(&f3), false);
-        assert_eq!(f4.eq(&f4), true);
+        assert!(f1.eq(&f1));
+        assert!(!f1.eq(&f2));
+        assert!(!f1.eq(&f3));
+        assert!(!f1.eq(&f4));
+        assert!(!f2.eq(&f1));
+        assert!(f2.eq(&f2));
+        assert!(!f2.eq(&f3));
+        assert!(!f2.eq(&f4));
+        assert!(!f3.eq(&f1));
+        assert!(!f3.eq(&f2));
+        assert!(f3.eq(&f3));
+        assert!(!f3.eq(&f4));
+        assert!(!f4.eq(&f1));
+        assert!(!f4.eq(&f2));
+        assert!(!f4.eq(&f3));
+        assert!(f4.eq(&f4));
     }
 
     #[test]
@@ -454,7 +459,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Foo<C>>,
             access: A,
         ) -> i32 {
-            access.get(&p).a
+            access.get(p).a
         }
     }
 
@@ -478,7 +483,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Bar<C>>,
             access: A,
         ) -> i32 {
-            access.get(&p).a
+            access.get(p).a
         }
     }
 
@@ -488,7 +493,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Bar<C>>,
             access: A,
         ) -> i32 {
-            access.get(&access.get(&p).foo).a
+            access.get(&access.get(p).foo).a
         }
     }
 
@@ -519,7 +524,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Baz<C>>,
             access: A,
         ) -> i32 {
-            access.get(&p).a
+            access.get(p).a
         }
     }
 
@@ -529,7 +534,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Baz<C>>,
             access: A,
         ) -> i32 {
-            access.get(&access.get(&p).bar).a
+            access.get(&access.get(p).bar).a
         }
     }
 
@@ -539,7 +544,7 @@ mod impl_constraints_tests {
             p: &persian_rug::Proxy<Baz<C>>,
             access: A,
         ) -> i32 {
-            access.get(&access.get(&access.get(&p).bar).foo).a
+            access.get(&access.get(&access.get(p).bar).foo).a
         }
     }
 
@@ -590,7 +595,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Foo<C>>,
         access: A,
     ) -> i32 {
-        access.get(&p).a
+        access.get(p).a
     }
 
     #[persian_rug::constraints(context = C)]
@@ -608,7 +613,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Bar<C>>,
         access: A,
     ) -> i32 {
-        access.get(&p).a
+        access.get(p).a
     }
 
     #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>))]
@@ -616,7 +621,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Bar<C>>,
         access: A,
     ) -> i32 {
-        access.get(&access.get(&p).foo).a
+        access.get(&access.get(p).foo).a
     }
 
     #[persian_rug::constraints(context = C)]
@@ -642,7 +647,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Baz<C>>,
         access: A,
     ) -> i32 {
-        access.get(&p).a
+        access.get(p).a
     }
 
     #[persian_rug::constraints(context=C, access(Bar<C>, Baz<C>))]
@@ -650,7 +655,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Baz<C>>,
         access: A,
     ) -> i32 {
-        access.get(&access.get(&p).bar).a
+        access.get(&access.get(p).bar).a
     }
 
     #[persian_rug::constraints(context=C, access(Foo<C>, Bar<C>, Baz<C>))]
@@ -658,7 +663,7 @@ mod fn_constraints_tests {
         p: &persian_rug::Proxy<Baz<C>>,
         access: A,
     ) -> i32 {
-        access.get(&access.get(&access.get(&p).bar).foo).a
+        access.get(&access.get(&access.get(p).bar).foo).a
     }
 
     #[test]
@@ -1114,7 +1119,7 @@ mod mutator_tests {
             baz: Default::default(),
         });
 
-        let _ = run_mutation_test(s.lock().unwrap());
+        let _unused = run_mutation_test(s.lock().unwrap());
     }
 
     #[test]
@@ -1125,7 +1130,7 @@ mod mutator_tests {
             baz: Default::default(),
         });
 
-        let _ = run_mutation_test(s.write().unwrap());
+        let _unused = run_mutation_test(s.write().unwrap());
     }
 
     #[test]
@@ -1136,6 +1141,6 @@ mod mutator_tests {
             baz: Default::default(),
         });
 
-        let _ = run_mutation_test(s.mutate());
+        let _unused = run_mutation_test(s.mutate());
     }
 }

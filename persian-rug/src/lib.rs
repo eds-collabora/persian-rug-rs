@@ -765,10 +765,7 @@ pub struct Proxy<T> {
 
 impl<T> Clone for Proxy<T> {
     fn clone(&self) -> Self {
-        Proxy {
-            _marker: Default::default(),
-            index: self.index,
-        }
+        *self
     }
 }
 
@@ -776,7 +773,7 @@ impl<T> Copy for Proxy<T> {}
 
 impl<T> PartialOrd for Proxy<T> {
     fn partial_cmp(&self, other: &Proxy<T>) -> Option<Ordering> {
-        self.index.partial_cmp(&other.index)
+        Some(self.cmp(other))
     }
 }
 
