@@ -286,9 +286,9 @@ pub fn persian_rug(_args: TokenStream, input: TokenStream) -> TokenStream {
                     (process_field)(field);
                 }
                 quote::quote! {
-                    #vis struct #ty_ident #generics #wc(
+                    #vis struct #ty_ident #generics(
                         #fields
-                    );
+                    ) #wc;
                 }
             }
             syn::Fields::Unit => {
