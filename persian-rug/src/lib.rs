@@ -987,12 +987,18 @@ impl<'a, T> Iterator for ProxySetIterator<'a, T> {
             } else if w & ProxySet::<T>::bit(self.index) != 0 {
                 self.mask |= ProxySet::<T>::bit(self.index);
                 self.index += 1;
+                if self.index & 0x3F == 0 {
+                    self.mask = 0;
+                }
                 return Some(Proxy {
                     _marker: Default::default(),
                     index: self.index - 1,
                 });
             } else {
                 self.index += 1;
+                if self.index & 0x3F == 0 {
+                    self.mask = 0;
+                }
             }
         }
         None

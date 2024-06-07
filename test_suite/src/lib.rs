@@ -1,6 +1,8 @@
 #![cfg(test)]
 #![allow(dead_code)]
 
+mod proxy_set;
+
 use std::any::Any;
 
 #[derive(Clone)]
